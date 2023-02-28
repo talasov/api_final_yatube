@@ -1,13 +1,9 @@
-import validators as validators
-
 from posts.models import Comment, Follow, Group, Post, User
-from rest_framework import serializers, validators
+from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
-from django.shortcuts import get_object_or_404
 
 
 class GroupSerializer(serializers.ModelSerializer):
-
     class Meta:
         fields = ('id', 'title', 'slug', 'description')
         model = Group
@@ -20,7 +16,7 @@ class PostSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = '__all__'
+        fields = ('id', 'text', 'pub_date', 'author', 'image', 'group')
         model = Post
 
 
@@ -29,7 +25,7 @@ class CommentSerializer(serializers.ModelSerializer):
     post = PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
-        fields = '__all__'
+        fields = ('id', 'author', 'post', 'text', 'created')
         model = Comment
 
 
@@ -45,7 +41,7 @@ class FollowSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = '__all__'
+        fields = ('id', 'user', 'following')
         model = Follow
         validators = [
             serializers.UniqueTogetherValidator(
