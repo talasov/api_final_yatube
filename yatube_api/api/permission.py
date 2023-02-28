@@ -18,5 +18,3 @@ class IsAuthorOrReadOnly(BasePermission):
                 request.method in SAFE_METHODS
                 or obj.author == request.user
         )
-
-
