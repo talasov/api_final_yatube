@@ -1,37 +1,14 @@
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from posts.models import Group, Post, User
-from rest_framework import filters, permissions, status, viewsets
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.response import Response
+from rest_framework import viewsets, filters
 
-from .permission import IsOwnerOrReadOnly
+from rest_framework.pagination import LimitOffsetPagination
+from .permission import IsAuthorOrReadOnly, IsAuthenticated, IsOwnerOrReadOnly
+from posts.models import Follow, Group, Post, User
 from .serializers import (
-    CommentSerializer, FollowSerializer, GroupSerializer, PostSerializer)
-
-
-class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['group']
-
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-
-class CommentViewSet(viewsets.ModelViewSet):
-    serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
-
-    def perform_create(self, serializer):
-        get_object_or_404(Post, pk=self.kwargs.get('post_id'))
-        serializer.save(author=self.request.user)
-
-    def get_queryset(self):
-        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
-        return post.comments.all()
+    CommentSerializer, FollowSerializer, GroupSerializer, PostSerializer
+)
+from rest_framework.response import Response
+from rest_framework import filters, permissions, status, viewsets
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -43,12 +20,44 @@ class GroupViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all().select_related('author', 'group')
+    serializer_class = PostSerializer
+    permission_classes = (IsAuthorOrReadOnly,)
+    pagination_class = LimitOffsetPagination
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = (IsAuthorOrReadOnly,)
+
+    def get_queryset(self):
+        post = get_object_or_404(
+            Post.objects.select_related('author', 'group'),
+            pk=self.kwargs.get('post_id')
+        )
+        return post.comments.all()
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(
+            Post.objects.select_related('author', 'group'),
+            pk=self.kwargs.get('post_id')
+        )
+        serializer.save(
+            author=self.request.user,
+            post=post
+        )
+
+
 class FollowViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post']
-    permission_classes = [permissions.IsAuthenticated]
+    queryset = Follow.objects.all()
     serializer_class = FollowSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['user__username', 'following__username']
+    permission_classes = (IsAuthenticated,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('user__username', 'following__username')
 
     def get_queryset(self):
         user = get_object_or_404(User, username=self.request.user.username)

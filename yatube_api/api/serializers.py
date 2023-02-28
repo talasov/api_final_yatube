@@ -1,5 +1,16 @@
+import validators as validators
+
 from posts.models import Comment, Follow, Group, Post, User
-from rest_framework import serializers
+from rest_framework import serializers, validators
+from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
+from django.shortcuts import get_object_or_404
+
+
+class GroupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('id', 'title', 'slug', 'description')
+        model = Group
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -14,8 +25,8 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(read_only=True,
-                                          slug_field='username')
+    author = SlugRelatedField(slug_field='username', read_only=True)
+    post = PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         fields = '__all__'
@@ -50,10 +61,3 @@ class FollowSerializer(serializers.ModelSerializer):
                 'Нельзя подписаться на себя'
             )
         return data
-
-
-class GroupSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        fields = ('id', 'title')
-        model = Group
