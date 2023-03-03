@@ -1,7 +1,9 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (
+    IsAuthenticated, IsAuthenticatedOrReadOnly
+)
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, viewsets
 
 from posts.models import Follow, Group, Post, User
 from .permissions import IsAuthorOrReadOnly
