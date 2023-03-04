@@ -21,7 +21,6 @@ INSTALLED_APPS = [
     'djoser',
     'api',
     'posts',
-    'v1',
 ]
 
 MIDDLEWARE = [
